@@ -42,7 +42,7 @@ jobs:
             git checkout qa
 
             sudo docker build -t read-product .
-            sudo docker run -d --name read-product -p 3001:3001 \
+            sudo docker run -d --name read-product -p 4001:4001 \
               -e MONGO_URL=mongodb://13.222.75.144:27017 \
               read-product
 
