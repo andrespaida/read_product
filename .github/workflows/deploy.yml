@@ -1,0 +1,49 @@
+name: Deploy read-product
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" | base64 -d > key.pem
+          chmod 400 key.pem
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # Instalar Docker si no está instalado
+            if ! command -v docker &> /dev/null
+            then
+              echo "🛠 Instalando Docker..."
+              sudo apt update
+              sudo apt install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker \$USER
+            fi
+
+            # Preparar el despliegue
+            echo "📦 Desplegando read-product..."
+            docker stop read-product || true
+            docker rm read-product || true
+            rm -rf ~/read-product
+
+            git clone https://github.com/andrespaida/read_product.git ~/read-product
+            cd ~/read-product
+            git checkout qa
+
+            docker build -t read-product .
+            docker run -d --name read-product -p 3001:3001 \
+              -e MONGO_URL=mongodb://13.222.75.144:27017 \
+              read-product
+          EOF
