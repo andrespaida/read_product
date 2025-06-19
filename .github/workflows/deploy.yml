@@ -29,21 +29,24 @@ jobs:
               sudo apt install -y docker.io
               sudo systemctl start docker
               sudo systemctl enable docker
-              sudo usermod -aG docker \$USER
             fi
 
             # Prepare deployment
             echo "📦 Deploying read-product..."
-            docker stop read-product || true
-            docker rm read-product || true
+            sudo docker stop read-product || true
+            sudo docker rm read-product || true
             rm -rf ~/read-product
 
             git clone https://github.com/andrespaida/read_product.git ~/read-product
             cd ~/read-product
             git checkout qa
 
-            docker build -t read-product .
-            docker run -d --name read-product -p 3001:3001 \
+            sudo docker build -t read-product .
+            sudo docker run -d --name read-product -p 3001:3001 \
               -e MONGO_URL=mongodb://13.222.75.144:27017 \
               read-product
+
+            # Optional: Verify if container is running
+            echo "🔍 Verifying container status..."
+            sudo docker ps -a
           EOF
