@@ -42,11 +42,13 @@ jobs:
             git checkout qa
 
             sudo docker build -t read-product .
+
             sudo docker run -d --name read-product -p 4001:4001 \
-              -e MONGO_URL=mongodb://13.222.75.144:27017 \
+              -e MONGODB_URI=mongodb://13.222.75.144:27017 \
+              -e DB_NAME=toyshop_db \
+              -e PORT=4001 \
               read-product
 
-            # Optional: Verify if container is running
             echo "🔍 Verifying container status..."
             sudo docker ps -a
           EOF
