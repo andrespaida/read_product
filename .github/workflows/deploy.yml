@@ -48,8 +48,9 @@ jobs:
             # Reconstruir imagen con código actualizado (CORS incluido)
             sudo docker build -t read-product .
 
-            # Ejecutar contenedor con variables necesarias
+            # Ejecutar contenedor con reinicio automático
             sudo docker run -d --name read-product -p 4001:4001 \
+              --restart=always \
               -e MONGODB_URI=mongodb://13.222.75.144:27017 \
               -e DB_NAME=toyshop_db \
               -e PORT=4001 \
