@@ -83,7 +83,7 @@ This project includes a GitHub Actions workflow for automatic deployment to an E
 - `EC2_HOST`
 - `EC2_USERNAME`
 - `EC2_KEY`
-- `EC2_PORT` (optional)
+- `EC2_PORT`
 
 ## License
 
