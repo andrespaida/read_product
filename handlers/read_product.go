@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"read_product/database"
 	"read_product/models"
 	"time"
@@ -16,6 +17,7 @@ func ReadProducts(c *gin.Context) {
 
 	cursor, err := database.ProductCollection.Find(ctx, map[string]interface{}{})
 	if err != nil {
+		log.Println("❌ Error al hacer el Find:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching products"})
 		return
 	}
@@ -23,6 +25,7 @@ func ReadProducts(c *gin.Context) {
 
 	var products []models.Product
 	if err := cursor.All(ctx, &products); err != nil {
+		log.Println("❌ Error al decodificar productos:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding products"})
 		return
 	}
