@@ -1,6 +1,6 @@
 # Read Product Microservice
 
-This microservice retrieves product information from the MongoDB database. It is part of the ToyShop platform and allows users to view all available products.
+This microservice retrieves product information from the MongoDB database. It is part of the ToyShop platform and allows users to view all available products..
 
 ## Technologies Used
 
