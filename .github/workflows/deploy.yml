@@ -1,4 +1,4 @@
-name: Deploy read-product
+name: Build and Deploy read-product to EC2 from QA
 
 on:
   push:
@@ -6,51 +6,69 @@ on:
       - qa
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      IMAGE_TAG: qa
+
     steps:
+      # Checkout the source code from the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Log in to Docker Hub
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Build the Docker image with 'qa' tag
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }} .
+
+      # Push the image to Docker Hub
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }}
+
+      # Prepare SSH private key
       - name: Setup SSH key
         run: |
           echo "${{ secrets.EC2_KEY }}" > key.pem
           chmod 400 key.pem
 
-      - name: Deploy to EC2
+      # Connect to EC2 and deploy the container using the image from Docker Hub
+      - name: Deploy to EC2 using Docker image from Docker Hub (qa tag)
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
 
-            echo "📦 Updating Docker environment for read-product..."
+            echo "📦 Deploying read-product using Docker Hub image (qa)..."
 
-            if ! command -v docker &> /dev/null
-            then
+            # Install Docker if not already installed
+            if ! command -v docker &> /dev/null; then
               echo "🛠 Installing Docker..."
               sudo apt update
               sudo apt install -y docker.io
-              sudo systemctl start docker
               sudo systemctl enable docker
+              sudo systemctl start docker
+            else
+              echo "✅ Docker is already installed."
             fi
 
-            sudo docker stop read-product || true
-            sudo docker rm read-product || true
+            # Pull the latest 'qa' image from Docker Hub
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }}
 
-            rm -rf ~/read-product
-            git clone https://github.com/andrespaida/read_product.git ~/read-product
-            cd ~/read-product
-            git checkout qa
+            # Stop and remove any existing container
+            sudo docker rm -f read-product || true
 
-            sudo docker build -t read-product .
-
-            sudo docker run -d --name read-product -p 4001:4001 \
-              --restart=always \
+            # Run the container with environment variables and port mapping
+            sudo docker run -d --name read-product \
+              -p 4001:4001 \
+              --restart always \
               -e MONGODB_URI=mongodb://52.21.72.12:27017 \
               -e DB_NAME=toyshop_db \
               -e PORT=4001 \
-              read-product
+              ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }}
 
-            echo "✅ read-product deployed successfully"
+            echo "✅ read-product deployed successfully (qa)"
             sudo docker ps -a
           EOF
