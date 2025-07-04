@@ -1,16 +1,16 @@
-name: Build and Deploy read-product to EC2 from QA
+name: Build and Deploy read-product to EC2 from MAIN
 
 on:
   push:
     branches:
-      - qa
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE_TAG: qa
+      IMAGE_TAG: latest
 
     steps:
       # Checkout the source code from the repository
@@ -21,7 +21,7 @@ jobs:
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Build the Docker image with 'qa' tag
+      # Build the Docker image with 'latest' tag
       - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }} .
 
@@ -36,12 +36,12 @@ jobs:
           chmod 400 key.pem
 
       # Connect to EC2 and deploy the container using the image from Docker Hub
-      - name: Deploy to EC2 using Docker image from Docker Hub (qa tag)
+      - name: Deploy to EC2 using Docker image from Docker Hub (latest tag)
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
 
-            echo "📦 Deploying read-product using Docker Hub image (qa)..."
+            echo "📦 Deploying read-product using Docker Hub image (latest)..."
 
             # Install Docker if not already installed
             if ! command -v docker &> /dev/null; then
@@ -54,7 +54,7 @@ jobs:
               echo "✅ Docker is already installed."
             fi
 
-            # Pull the latest 'qa' image from Docker Hub
+            # Pull the latest 'main' image from Docker Hub
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }}
 
             # Stop and remove any existing container
@@ -69,6 +69,6 @@ jobs:
               -e PORT=4001 \
               ${{ secrets.DOCKER_USERNAME }}/read-product:${{ env.IMAGE_TAG }}
 
-            echo "✅ read-product deployed successfully (qa)"
+            echo "✅ read-product deployed successfully (main)"
             sudo docker ps -a
           EOF
