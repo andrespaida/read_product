@@ -1,12 +1,14 @@
 package main
 
 import (
-	"read_product/database"
-	"read_product/handlers"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"read_product/database"
+	"read_product/handlers"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -18,6 +20,14 @@ func main() {
 	database.ConnectDB()
 
 	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowCredentials: true,
+	}))
+
 	router.GET("/products", handlers.ReadProducts)
 
 	port := os.Getenv("PORT")
